@@ -1,46 +1,72 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import MarkdownOutput from '@/components/MarkdownOutput';
-import { submitJob, pollJobStatus, fetchJobResult } from '@/lib/api';
+import {
+  submitJob,
+  submitGuestJob,
+  pollJobStatus,
+  pollGuestJobStatus,
+  fetchJobResult,
+  fetchGuestJobResult,
+} from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 import ApiKeyModal from '@/components/ApiKeyModal';
 import DynamicLoader from '@/components/DynamicLoader';
-const STATUS_LABELS = {
-  pending: 'Queued for processing…',
-  running: 'Generating your notes…',
-  completed: 'Done!',
-  failed: 'Failed',
-};
+import QuotaPopup from '@/components/QuotaPopup';
+
+const GUEST_STORAGE_KEY = 'guestRequests';
+const GUEST_LIMIT = 2;
+const WINDOW_MS = 24 * 60 * 60 * 1000; // 24 hours
+
+function getGuestUsage() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(GUEST_STORAGE_KEY) || '[]');
+    const cutoff = Date.now() - WINDOW_MS;
+    const recent = stored.filter(ts => ts > cutoff);
+    localStorage.setItem(GUEST_STORAGE_KEY, JSON.stringify(recent));
+    return { used: recent.length, remaining: Math.max(0, GUEST_LIMIT - recent.length) };
+  } catch {
+    return { used: 0, remaining: GUEST_LIMIT };
+  }
+}
+
+function recordGuestUsage() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(GUEST_STORAGE_KEY) || '[]');
+    stored.push(Date.now());
+    localStorage.setItem(GUEST_STORAGE_KEY, JSON.stringify(stored));
+  } catch { /* ignore */ }
+}
 
 export default function Home() {
   const router = useRouter();
-  const { user, loading: authLoading, idToken, hasApiKey } = useAuth();
+  const { user, idToken, hasApiKey, useOwnKey, rateLimit, refreshProfile } = useAuth();
   const [showApiKeyModal, setShowApiKeyModal] = useState(false);
 
   const [url, setUrl] = useState('');
   const [phase, setPhase] = useState('idle'); // idle | submitting | polling | done | error
-  const [jobStatus, setJobStatus] = useState(null); // 'pending' | 'running' | 'completed'
+  const [jobStatus, setJobStatus] = useState(null);
   const [notes, setNotes] = useState(null);
   const [source, setSource] = useState(null);
   const [error, setError] = useState(null);
+  const [guestUsage, setGuestUsage] = useState({ used: 0, remaining: GUEST_LIMIT });
 
-  const isLoading = phase === 'submitting' || phase === 'polling' || authLoading;
+  const isLoading = phase === 'submitting' || phase === 'polling';
+
+  // Calculate guest usage on mount
+  useEffect(() => {
+    if (!user) {
+      setGuestUsage(getGuestUsage());
+    }
+  }, [user]);
+
+  const isFreeTier = user && (!hasApiKey || !useOwnKey);
 
   const handleGenerate = useCallback(async (e) => {
     e.preventDefault();
     if (!url || isLoading) return;
-
-    if (!user) {
-      router.push('/login');
-      return;
-    }
-
-    if (!hasApiKey) {
-      setShowApiKeyModal(true);
-      return;
-    }
 
     setPhase('submitting');
     setJobStatus(null);
@@ -49,24 +75,50 @@ export default function Home() {
     setSource(null);
 
     try {
-      // 1. Create the job
-      const job = await submitJob(url, idToken);
-      setPhase('polling');
-      setJobStatus(job.status);
+      if (!user) {
+        // ── Guest flow ──
+        const usage = getGuestUsage();
+        if (usage.remaining <= 0) {
+          setError("You've used all 2 free guest requests. Log in for 5 free requests, or add your API key for unlimited access.");
+          setPhase('error');
+          return;
+        }
 
-      // 2. Poll until done
-      await pollJobStatus(job.job_id, (status) => setJobStatus(status.status), idToken);
+        const job = await submitGuestJob(url);
+        recordGuestUsage();
+        setGuestUsage(getGuestUsage());
+        setPhase('polling');
+        setJobStatus(job.status);
 
-      // 3. Fetch the result
-      const result = await fetchJobResult(job.job_id, idToken);
-      setNotes(result.notes);
-      setSource(result.source);
-      setPhase('done');
+        await pollGuestJobStatus(job.job_id, (status) => setJobStatus(status.status));
+        const result = await fetchGuestJobResult(job.job_id);
+        setNotes(result.notes);
+        setSource(result.source);
+        setPhase('done');
+      } else {
+        // ── Authenticated flow ──
+        const job = await submitJob(url, idToken);
+        setPhase('polling');
+        setJobStatus(job.status);
+
+        await pollJobStatus(job.job_id, (status) => setJobStatus(status.status), idToken);
+        const result = await fetchJobResult(job.job_id, idToken);
+        setNotes(result.notes);
+        setSource(result.source);
+        setPhase('done');
+
+        if (isFreeTier) {
+          await refreshProfile(idToken);
+        }
+      }
     } catch (err) {
       setError(err.message || "An unexpected error occurred");
       setPhase('error');
+      if (user && idToken) {
+        await refreshProfile(idToken);
+      }
     }
-  }, [url, isLoading, user, hasApiKey, idToken, router]);
+  }, [url, isLoading, user, idToken, isFreeTier, refreshProfile]);
 
   return (
     <main className="min-h-screen relative overflow-hidden flex flex-col items-center py-20 px-4 sm:px-6 lg:px-8">
@@ -75,7 +127,7 @@ export default function Home() {
       <div className="absolute top-[40%] right-[-10%] w-[30%] h-[30%] rounded-full bg-indigo-600/20 blur-[120px] pointer-events-none -z-10" />
 
       {/* Header Info */}
-      <div className="text-center max-w-3xl mb-12 animate-in fade-in slide-in-from-top-8 duration-1000">
+      <div className="text-center max-w-4xl mb-12 animate-in fade-in slide-in-from-top-8 duration-1000">
         <h1 className="text-5xl md:text-6xl font-extrabold tracking-tight mb-6">
           Turn any <span className="text-gradient">Video or Blog</span> into structured notes.
         </h1>
@@ -84,7 +136,7 @@ export default function Home() {
         </p>
 
         {/* Input Form */}
-        <form onSubmit={handleGenerate} className="flex flex-col sm:flex-row gap-4 w-full max-w-2xl mx-auto">
+        <form onSubmit={handleGenerate} className="flex flex-col sm:flex-row gap-4 w-full max-w-3xl mx-auto">
           <div className="relative flex-grow group">
             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
               <svg className="h-5 w-5 text-gray-400 group-focus-within:text-primary transition-colors" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
@@ -95,7 +147,7 @@ export default function Home() {
               id="url-input"
               type="url"
               required
-              placeholder="https://youtube.com/watch?v=... or https://medium.com/..."
+              placeholder="Paste YT video or blog link here."
               className="glass-input block w-full pl-11 pr-4 py-4 rounded-xl text-foreground placeholder-foreground/40 sm:text-lg focus:outline-none"
               value={url}
               onChange={(e) => setUrl(e.target.value)}
@@ -114,24 +166,14 @@ export default function Home() {
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                {authLoading ? 'Loading…' : phase === 'submitting' ? 'Submitting…' : 'Processing…'}
+                {phase === 'submitting' ? 'Submitting…' : 'Processing…'}
               </>
             ) : (
               <>
-                {user ? 'Generate Notes' : 'Log in to Generate'}
+                Generate Notes
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  {user ? (
-                    <>
-                      <line x1="5" y1="12" x2="19" y2="12"></line>
-                      <polyline points="12 5 19 12 12 19"></polyline>
-                    </>
-                  ) : (
-                    <>
-                      <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
-                      <polyline points="10 17 15 12 10 7"></polyline>
-                      <line x1="15" y1="12" x2="3" y2="12"></line>
-                    </>
-                  )}
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                  <polyline points="12 5 19 12 12 19"></polyline>
                 </svg>
               </>
             )}
@@ -140,11 +182,14 @@ export default function Home() {
 
         {/* Job loading state */}
         {isLoading && jobStatus && (
-          <DynamicLoader jobStatus={jobStatus} />
+          <DynamicLoader
+            jobStatus={jobStatus}
+            sourceType={url.toLowerCase().includes('youtube.com') || url.toLowerCase().includes('youtu.be') ? 'youtube' : 'blog'}
+          />
         )}
         {/* Error Message */}
         {error && (
-          <div className="mt-6 p-4 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm max-w-2xl mx-auto flex gap-3 animate-in slide-in-from-top-2">
+          <div className="mt-6 p-4 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm max-w-3xl mx-auto flex gap-3 animate-in slide-in-from-top-2">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
               <circle cx="12" cy="12" r="10"></circle>
               <line x1="12" y1="8" x2="12" y2="12"></line>
@@ -157,7 +202,7 @@ export default function Home() {
 
       {/* Results */}
       {notes && (
-        <div className="w-full flex flex-col items-center">
+        <div className="w-full max-w-5xl flex flex-col items-center">
           <div className="inline-flex items-center gap-2 mb-2 px-4 py-1.5 bg-surface rounded-full border border-border text-sm text-foreground/80">
             {source?.type === 'youtube' ? (
               <svg className="text-red-500" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2.5 17a24.12 24.12 0 0 1 0-10 2 2 0 0 1 1.4-1.4 49.56 49.56 0 0 1 16.2 0A2 2 0 0 1 21.5 7a24.12 24.12 0 0 1 0 10 2 2 0 0 1-1.4 1.4 49.55 49.55 0 0 1-16.2 0A2 2 0 0 1 2.5 17" /><polygon points="10 15 15 12 10 9 10 15" fill="var(--background)" /></svg>
@@ -173,6 +218,7 @@ export default function Home() {
       )}
 
       <ApiKeyModal isOpen={showApiKeyModal} onClose={() => setShowApiKeyModal(false)} />
+      {!user && <QuotaPopup />}
     </main>
   );
 }

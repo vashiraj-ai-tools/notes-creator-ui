@@ -8,7 +8,7 @@ import { useAuth } from '@/components/AuthProvider';
 
 export default function LoginPage() {
   const router = useRouter();
-  const { user, loading } = useAuth();
+  const { user, ready } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -16,10 +16,10 @@ export default function LoginPage() {
   const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
-    if (user && !loading) {
+    if (user && ready) {
       router.push('/');
     }
-  }, [user, loading, router]);
+  }, [user, ready, router]);
 
   const handleGoogleSignIn = async () => {
     try {
@@ -51,7 +51,7 @@ export default function LoginPage() {
     }
   };
 
-  if (loading || user) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  if (!ready || user) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4">

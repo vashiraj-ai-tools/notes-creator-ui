@@ -16,6 +16,11 @@ const geistMono = Geist_Mono({
 export const metadata = {
   title: "Notes Creator — AI-powered revision notes from any video or blog",
   description: "Paste a YouTube or blog URL and get structured, AI-generated revision notes in seconds. Powered by Gemini.",
+  icons: {
+    icon: "/icon.png",
+    shortcut: "/icon.png",
+    apple: "/icon.png",
+  },
 };
 
 export default function RootLayout({ children }) {
