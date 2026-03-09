@@ -49,6 +49,44 @@ export async function submitGuestJob(url) {
   return res.json();
 }
 
+/**
+ * Submit an upload-based job (authenticated).
+ * @param {{ uploadType: string, textContent?: string, file?: File }} payload
+ * @param {string} token
+ */
+export async function submitUploadJob({ uploadType, textContent, file }, token) {
+  const formData = new FormData();
+  formData.append('upload_type', uploadType);
+  if (textContent) formData.append('text_content', textContent);
+  if (file) formData.append('file', file);
+
+  const headers = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+
+  const res = await fetch(`${API_BASE_URL}/api/jobs/upload`, {
+    method: 'POST',
+    headers,
+    body: formData,
+  });
+  if (!res.ok) throw new Error(await parseError(res, 'Failed to submit upload job'));
+  return res.json();
+}
+
+/** Submit an upload-based job as guest (IP rate-limited). */
+export async function submitGuestUploadJob({ uploadType, textContent, file }) {
+  const formData = new FormData();
+  formData.append('upload_type', uploadType);
+  if (textContent) formData.append('text_content', textContent);
+  if (file) formData.append('file', file);
+
+  const res = await fetch(`${API_BASE_URL}/api/jobs/guest/upload`, {
+    method: 'POST',
+    body: formData,
+  });
+  if (!res.ok) throw new Error(await parseError(res, 'Failed to submit upload job'));
+  return res.json();
+}
+
 // ── Job polling ────────────────────────────────────────────────────────────
 
 /** Poll job status until completed or failed. */
