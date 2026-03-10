@@ -4,7 +4,7 @@ export default function MarkdownOutput({ content }) {
   if (!content) return null;
 
   return (
-    <div className="glass-panel p-6 sm:p-8 rounded-2xl w-full max-w-4xl mx-auto my-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div className="bg-surface/50 border border-border p-4 sm:p-8 rounded-2xl w-full max-w-4xl mx-auto my-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="markdown-body">
         <ReactMarkdown>{content}</ReactMarkdown>
       </div>

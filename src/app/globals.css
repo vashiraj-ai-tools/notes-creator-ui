@@ -1,14 +1,14 @@
 @import "tailwindcss";
 
 @theme {
-  --color-background: #0f172a;
-  --color-foreground: #f8fafc;
-  --color-primary: #3b82f6;
-  --color-primary-hover: #2563eb;
-  --color-surface: #1e293b;
-  --color-surface-hover: #334155;
-  --color-border: #334155;
-  --color-ring: rgba(59, 130, 246, 0.5);
+  --color-background: #09090b; /* zinc-950 */
+  --color-foreground: #fafafa; /* zinc-50 */
+  --color-primary: #a855f7; /* purple-500 */
+  --color-primary-hover: #9333ea; /* purple-600 */
+  --color-surface: #18181b; /* zinc-900 */
+  --color-surface-hover: #27272a; /* zinc-800 */
+  --color-border: #27272a; /* zinc-800 */
+  --color-ring: rgba(168, 85, 247, 0.5);
 }
 
 @layer base {
@@ -21,42 +21,39 @@
   }
 
   ::selection {
-    background-color: rgba(59, 130, 246, 0.3);
+    background-color: rgba(168, 85, 247, 0.3);
   }
 }
 
 @layer utilities {
   .glass-panel {
-    background-color: rgba(30, 41, 59, 0.8);
+    background-color: rgba(24, 24, 27, 0.7);
     backdrop-filter: blur(12px);
-    border: 1px solid rgba(51, 65, 85, 0.5);
-    box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+    border: 1px solid rgba(39, 39, 42, 0.8);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   }
 
   .glass-card {
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.7), rgba(15, 23, 42, 0.8));
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
-    transition: all 0.3s ease;
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    transition: all 0.2s ease;
   }
 
   .glass-card:hover {
-    border-color: rgba(59, 130, 246, 0.3);
-    box-shadow: 0 15px 40px -10px rgba(59, 130, 246, 0.2);
+    border-color: rgba(168, 85, 247, 0.5);
   }
 
   .glass-input {
-    background-color: rgba(15, 23, 42, 0.5);
+    background-color: var(--color-background);
     border: 1px solid var(--color-border);
     transition-property: all;
     transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-    transition-duration: 300ms;
+    transition-duration: 200ms;
   }
 
   .glass-input:focus {
     border-color: var(--color-primary);
-    box-shadow: 0 0 0 2px var(--color-ring);
+    box-shadow: 0 0 0 1px var(--color-ring);
   }
 
   .primary-button {
@@ -65,29 +62,26 @@
     font-weight: 500;
     transition-property: all;
     transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-    transition-duration: 300ms;
-    box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.2), 0 4px 6px -4px rgba(59, 130, 246, 0.2);
+    transition-duration: 200ms;
+    border: 1px solid transparent;
   }
 
   .primary-button:hover {
     background-color: var(--color-primary-hover);
-    box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.4), 0 4px 6px -4px rgba(59, 130, 246, 0.4);
   }
 
   .primary-button:active {
-    transform: scale(0.95);
+    transform: scale(0.98);
   }
 
   .text-gradient {
-    background-clip: text;
-    -webkit-background-clip: text;
-    color: transparent;
-    background-image: linear-gradient(to right, #60a5fa, #818cf8);
+    color: var(--color-foreground);
+    /* Removed the heavy gradient for a cleaner look */
   }
 
-  /* Basic Markdown Styling to avoid using @apply in V4 */
+  /* Basic Markdown Styling */
   .markdown-body {
-    color: rgba(248, 250, 252, 0.9);
+    color: rgba(250, 250, 250, 0.9);
     line-height: 1.625;
   }
 
@@ -109,7 +103,7 @@
   .markdown-body h2 {
     font-size: 1.5rem;
     line-height: 2rem;
-    border-bottom: 1px solid rgba(51, 65, 85, 0.5);
+    border-bottom: 1px solid rgba(39, 39, 42, 0.8);
     padding-bottom: 0.5rem;
   }
 
@@ -147,16 +141,15 @@
   }
 
   .markdown-body blockquote {
-    border-left: 4px solid rgba(59, 130, 246, 0.5);
+    border-left: 4px solid var(--color-border);
     padding-left: 1rem;
     padding-top: 0.25rem;
     padding-bottom: 0.25rem;
     margin-top: 1rem;
     margin-bottom: 1rem;
-    background-color: rgba(30, 41, 59, 0.3);
-    border-top-right-radius: 0.375rem;
-    border-bottom-right-radius: 0.375rem;
-    color: rgba(248, 250, 252, 0.8);
+    background-color: var(--color-surface);
+    border-radius: 0 0.375rem 0.375rem 0;
+    color: rgba(250, 250, 250, 0.7);
     font-style: italic;
   }
 
@@ -165,29 +158,28 @@
     padding: 1rem;
     border-radius: 0.5rem;
     overflow-x: auto;
-    border: 1px solid rgba(51, 65, 85, 0.5);
+    border: 1px solid var(--color-border);
     margin-top: 1.5rem;
     margin-bottom: 1.5rem;
-    box-shadow: inset 0 2px 4px 0 rgb(0 0 0 / 0.05);
     font-size: 0.875rem;
     line-height: 1.25rem;
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   }
 
   .markdown-body code {
-    background-color: rgba(30, 41, 59, 0.8);
+    background-color: var(--color-surface);
     padding: 0.125rem 0.375rem;
     border-radius: 0.25rem;
-    color: rgba(59, 130, 246, 0.9);
+    color: var(--color-primary);
     font-size: 0.875rem;
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-    border: 1px solid rgba(51, 65, 85, 0.3);
+    border: 1px solid var(--color-border);
   }
 
   .markdown-body pre code {
     background-color: transparent;
     padding: 0;
-    color: rgba(248, 250, 252, 0.9);
+    color: rgba(250, 250, 250, 0.9);
     border: none;
   }
 }

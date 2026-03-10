@@ -43,17 +43,17 @@ export default function Header() {
     <>
       <header className="w-full fixed top-0 backdrop-blur-md bg-background/80 border-b border-border z-40 px-6 py-4 flex justify-between items-center transition-all duration-300">
         <div className="flex items-center gap-8">
-          <Link href="/" className="flex items-center gap-2 group">
-            <div className="bg-primary/20 p-1.5 rounded-lg group-hover:bg-primary/30 transition-colors">
+          <Link href="/" className="flex items-center gap-2 group cursor-pointer">
+            <div className="bg-primary/10 p-1.5 rounded-lg group-hover:bg-primary/20 transition-colors border border-primary/20">
               <img
                 src="/icon.png"
                 alt="Notes Creator Logo"
-                className="w-8 h-8 object-contain"
+                className="w-6 h-6 sm:w-8 sm:h-8 object-contain"
               />
             </div>
             <div className="flex flex-col">
-              <span className="font-bold text-xl tracking-tight text-foreground/90 group-hover:text-foreground transition-colors leading-none">Notes Creator</span>
-              <span className="text-[10px] text-foreground/50 font-medium tracking-wide mt-1">by raj vashisht</span>
+              <span className="font-bold text-lg sm:text-xl tracking-tight text-foreground/90 group-hover:text-foreground transition-colors leading-none">Notes Creator</span>
+              <span className="hidden sm:block text-[10px] text-foreground/50 font-medium tracking-wide mt-1">by raj vashisht</span>
             </div>
           </Link>
 

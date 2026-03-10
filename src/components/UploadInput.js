@@ -4,6 +4,7 @@ import { useState, useRef, useCallback } from 'react';
 
 const TABS = [
   { id: 'video', label: 'Video File', icon: '🎬', accept: 'video/*', maxMB: 500 },
+  { id: 'audio', label: 'Audio File', icon: '🎵', accept: 'audio/*,.mp3,.wav,.m4a,.ogg,.flac,.aac,.opus,.wma', maxMB: 200 },
   { id: 'text', label: 'Paste Text', icon: '📝', accept: null, maxMB: null },
   { id: 'document', label: 'PDF / Doc', icon: '📄', accept: '.pdf,.docx,.txt', maxMB: 50 },
 ];
@@ -66,19 +67,19 @@ export default function UploadInput({ onSubmit, isLoading }) {
   return (
     <form onSubmit={handleSubmit} className="w-full max-w-3xl mx-auto flex flex-col gap-4">
       {/* Tab bar */}
-      <div className="flex gap-1 p-1 rounded-xl bg-surface border border-border">
+      <div className="grid grid-cols-2 sm:flex sm:flex-row gap-1 p-1 rounded-xl bg-surface border border-border">
         {TABS.map(tab => (
           <button
             key={tab.id}
             type="button"
             onClick={() => handleTabSwitch(tab.id)}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-sm font-medium transition-all duration-200 ${activeTab === tab.id
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-2 sm:px-3 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 ${activeTab === tab.id
                 ? 'bg-primary text-white shadow-sm'
                 : 'text-foreground/60 hover:text-foreground hover:bg-white/5'
               }`}
           >
             <span>{tab.icon}</span>
-            <span className="hidden sm:inline">{tab.label}</span>
+            <span className="truncate">{tab.label}</span>
           </button>
         ))}
       </div>
@@ -124,7 +125,7 @@ export default function UploadInput({ onSubmit, isLoading }) {
           {file ? (
             <>
               <div className="w-14 h-14 rounded-full bg-green-500/15 flex items-center justify-center text-2xl">
-                {activeTab === 'video' ? '🎬' : '📄'}
+                {activeTab === 'video' ? '🎬' : activeTab === 'audio' ? '🎵' : '📄'}
               </div>
               <div className="text-center">
                 <p className="font-medium text-foreground truncate max-w-xs">{file.name}</p>
@@ -156,7 +157,9 @@ export default function UploadInput({ onSubmit, isLoading }) {
                 <p className="text-sm text-foreground/50 mt-1">
                   {activeTab === 'video'
                     ? 'MP4, MOV, AVI, MKV, WEBM · up to 500 MB'
-                    : 'PDF, DOCX, TXT · up to 50 MB'}
+                    : activeTab === 'audio'
+                      ? 'MP3, WAV, M4A, OGG, FLAC, AAC · up to 200 MB'
+                      : 'PDF, DOCX, TXT · up to 50 MB'}
                 </p>
               </div>
             </>

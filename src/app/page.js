@@ -163,6 +163,10 @@ export default function Home() {
       <path d="M2.5 17a24.12 24.12 0 0 1 0-10 2 2 0 0 1 1.4-1.4 49.56 49.56 0 0 1 16.2 0A2 2 0 0 1 21.5 7a24.12 24.12 0 0 1 0 10 2 2 0 0 1-1.4 1.4 49.55 49.55 0 0 1-16.2 0A2 2 0 0 1 2.5 17" />
       <polygon points="10 15 15 12 10 9 10 15" fill="var(--background)" />
     </svg>
+  ) : source?.type === 'audio' ? (
+    <svg className="text-emerald-400" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" />
+    </svg>
   ) : source?.type === 'video' ? (
     <svg className="text-purple-400" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
       <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18" /><line x1="7" y1="2" x2="7" y2="22" /><line x1="17" y1="2" x2="17" y2="22" /><line x1="2" y1="12" x2="22" y2="12" /><line x1="2" y1="7" x2="7" y2="7" /><line x1="2" y1="17" x2="7" y2="17" /><line x1="17" y1="17" x2="22" y2="17" /><line x1="17" y1="7" x2="22" y2="7" />
@@ -178,27 +182,28 @@ export default function Home() {
   );
 
   const sourceLabel = source?.type === 'youtube' ? 'Video'
-    : source?.type === 'video' ? 'Uploaded Video'
-      : source?.type === 'document' ? 'Document'
-        : 'Article';
+    : source?.type === 'audio' ? 'Audio'
+      : source?.type === 'video' ? 'Uploaded Video'
+        : source?.type === 'document' ? 'Document'
+          : 'Article';
 
   return (
-    <main className="min-h-screen relative overflow-hidden flex flex-col items-center py-20 px-4 sm:px-6 lg:px-8">
+    <main className="min-h-screen relative overflow-hidden flex flex-col items-center py-24 px-4 sm:px-6 lg:px-8 bg-background">
       {/* Background Decorators */}
-      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-blue-600/20 blur-[120px] pointer-events-none -z-10" />
-      <div className="absolute top-[40%] right-[-10%] w-[30%] h-[30%] rounded-full bg-indigo-600/20 blur-[120px] pointer-events-none -z-10" />
+      <div className="absolute top-0 inset-x-0 h-64 bg-gradient-to-b from-primary/5 to-transparent pointer-events-none -z-10" />
+      <div className="absolute -top-24 -right-24 w-96 h-96 bg-primary/10 rounded-full blur-3xl pointer-events-none -z-10" />
 
       {/* Header Info */}
-      <div className="text-center max-w-4xl mb-10 animate-in fade-in slide-in-from-top-8 duration-1000">
-        <h1 className="text-5xl md:text-6xl font-extrabold tracking-tight mb-6">
-          Turn any <span className="text-gradient">Video or Article</span> into structured notes.
+      <div className="text-center max-w-4xl mb-12 animate-in fade-in slide-in-from-top-8 duration-1000 mt-8">
+        <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight mb-6 leading-tight">
+          Turn any <span className="text-primary font-black">Video, Audio, or Article</span> into structured notes.
         </h1>
-        <p className="text-lg text-foreground/70 mb-8 max-w-2xl mx-auto">
+        <p className="text-base sm:text-lg text-foreground/60 mb-10 max-w-2xl mx-auto">
           Paste a link, upload a file, or drop in your own text — get clean, concise revision notes in seconds.
         </p>
 
         {/* Input Mode Switcher */}
-        <div className="flex gap-1 p-1 rounded-xl bg-surface border border-border max-w-xs mx-auto mb-8">
+        <div className="flex gap-1 p-1 rounded-xl bg-surface border border-border max-w-[280px] sm:max-w-xs mx-auto mb-8">
           <button
             id="mode-url-btn"
             type="button"
@@ -242,7 +247,7 @@ export default function Home() {
                 id="url-input"
                 type="url"
                 required
-                placeholder="Paste YT video or blog link here."
+                placeholder="Paste any link — YouTube, blog, podcast, audio/video file…"
                 className="glass-input block w-full pl-11 pr-4 py-4 rounded-xl text-foreground placeholder-foreground/40 sm:text-lg focus:outline-none"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
@@ -287,7 +292,9 @@ export default function Home() {
             sourceType={
               inputMode === 'upload' ? 'document'
                 : (url.toLowerCase().includes('youtube.com') || url.toLowerCase().includes('youtu.be')) ? 'youtube'
-                  : 'blog'
+                  : /\.(mp3|wav|m4a|ogg|flac|aac|opus|wma)([?#]|$)/i.test(url) ? 'audio'
+                    : /\.(mp4|mkv|avi|mov|webm|wmv|flv|ts)([?#]|$)/i.test(url) ? 'video'
+                      : 'blog'
             }
           />
         )}
